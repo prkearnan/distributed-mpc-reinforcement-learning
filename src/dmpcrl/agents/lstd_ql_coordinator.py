@@ -181,7 +181,7 @@ class LstdQLearningAgentCoordinator(LstdQLearningAgent):
             centralized_mpc,
             centralized_update_strategy if flag else 1,
             centralized_discount_factor if flag else 1.0,
-            centralized_optimizer if flag else NewtonMethod(1),  # dummy optimizer
+            centralized_optimizer if flag else GradientDescent(1),  # dummy optimizer
             centralized_learnable_parameters if flag else LearnableParametersDict(),
             centralized_fixed_parameters if flag else None,
             centralized_exploration if flag else None,

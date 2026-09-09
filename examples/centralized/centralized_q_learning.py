@@ -248,7 +248,7 @@ class LinearMpc(Mpc[cs.SX]):
         s, _, _ = self.variable("s", (nx, N), lb=0)
 
         # dynamics
-        self.set_dynamics(lambda x, u: A @ x + B @ u + b, n_in=2, n_out=1)
+        self.set_affine_dynamics(A, B, c=b)
 
         # other constraints
         self.constraint("x_lb", x_bnd[0].reshape(-1, 1) + x_lb - s, "<=", x[:, 1:])
@@ -294,7 +294,7 @@ class LinearMpc(Mpc[cs.SX]):
 mpc = LinearMpc()
 learnable_pars = LearnableParametersDict[cs.SX](
     (
-        LearnableParameter(name, val.shape, val, sym=mpc.parameters[name])
+        LearnableParameter(name, val.shape, val)
         for name, val in mpc.learnable_pars_init.items()
     )
 )

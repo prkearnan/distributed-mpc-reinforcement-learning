@@ -3,8 +3,14 @@ from typing import Any
 import casadi as cs
 import gymnasium as gym
 import numpy as np
+
 import numpy.typing as npt
 from model import Model
+
+
+def _to_scalar(v):
+    """numpy>=2 no longer coerces size-1 arrays via float()."""
+    return float(np.asarray(v).reshape(-1)[0])
 
 
 class LtiSystem(gym.Env[npt.NDArray[np.floating], npt.NDArray[np.floating]]):
@@ -84,7 +90,7 @@ class LtiSystem(gym.Env[npt.NDArray[np.floating], npt.NDArray[np.floating]]):
         -------
         float
             The stage cost."""
-        return 0.5 * float(
+        return 0.5 * _to_scalar(
             np.square(state).sum()
             + 0.5 * np.square(action).sum()
             + w @ np.maximum(0, lb[:, np.newaxis] - state)

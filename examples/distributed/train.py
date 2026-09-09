@@ -32,7 +32,7 @@ G = AdmmCoordinator.g_map(model.adj)
 centralized_mpc = CentralizedMpc(model, prediction_horizon)
 centralized_learnable_pars = LearnableParametersDict[cs.SX](
     (
-        LearnableParameter(name, val.shape, val, sym=centralized_mpc.parameters[name])
+        LearnableParameter(name, val.shape, val)
         for name, val in centralized_mpc.learnable_pars_init.items()
     )
 )
@@ -52,7 +52,7 @@ distributed_learnable_parameters: list[LearnableParametersDict] = [
     LearnableParametersDict[cs.SX](
         (
             LearnableParameter(
-                name, val.shape, val, sym=distributed_mpcs[i].parameters[name]
+                name, val.shape, val
             )
             for name, val in distributed_mpcs[i].learnable_pars_init.items()
         )

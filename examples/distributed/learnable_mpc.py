@@ -138,7 +138,7 @@ class CentralizedMpc(LearnableMpc):
         s, _, _ = self.variable("s", (self.nx, N), lb=0)
 
         # dynamics
-        self.set_dynamics(lambda x, u: A @ x + B @ u + b, n_in=2, n_out=1)
+        self.set_affine_dynamics(A, B, c=b)
 
         # other constraints
         self.constraint("x_lb", self.x_bnd[0].reshape(-1, 1) + x_lb - s, "<=", x[:, 1:])
