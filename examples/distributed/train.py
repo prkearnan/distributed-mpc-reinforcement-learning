@@ -21,9 +21,9 @@ from dmpcrl.core.admm import AdmmCoordinator
 
 save_data = True
 
-centralized_flag = True
+centralized_flag = False  #True changed
 prediction_horizon = 10
-admm_iters = 50
+admm_iters = 10
 rho = 0.5
 model = Model()
 G = AdmmCoordinator.g_map(model.adj)
@@ -52,7 +52,9 @@ distributed_learnable_parameters: list[LearnableParametersDict] = [
     LearnableParametersDict[cs.SX](
         (
             LearnableParameter(
-                name, val.shape, val
+                name, val.shape, val,
+                lb=0.1 if name == "kappa" else -np.inf,
+                ub=10.0 if name == "kappa" else np.inf,
             )
             for name, val in distributed_mpcs[i].learnable_pars_init.items()
         )
@@ -95,7 +97,7 @@ agents = [
     for i in range(Model.n)
 ]
 
-env = MonitorEpisodes(TimeLimit(LtiSystem(model=model), max_episode_steps=int(1e3)))
+env = MonitorEpisodes(TimeLimit(LtiSystem(model=model), max_episode_steps=int(200))) #1e3 changed
 agent = Log(  # type: ignore[var-annotated]
     RecordUpdates(
         LstdQLearningAgentCoordinator(
@@ -126,6 +128,9 @@ agent = Log(  # type: ignore[var-annotated]
 )
 
 agent.train(env=env, episodes=1, seed=1, raises=False)
+
+for i in range(Model.n):
+    print(f"agent {i} kappa = {agent.agents[i].learnable_parameters['kappa'].value}")
 
 # extract data
 # from agent

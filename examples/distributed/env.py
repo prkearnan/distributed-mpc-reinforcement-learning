@@ -6,6 +6,8 @@ import numpy as np
 
 import numpy.typing as npt
 from model import Model
+Model.KAPPA = 0.0
+
 
 
 def _to_scalar(v):
@@ -152,7 +154,9 @@ class LtiSystem(gym.Env[npt.NDArray[np.floating], npt.NDArray[np.floating]]):
             The new state, the reward, truncated flag, terminated flag, and an info dictionary.
         """
         action = action.full()  # convert action from casadi DM to numpy array
-        x_new = self.A @ self.x + self.B @ action
+        x_new = self.A @ self.x + self.B @ Model.phi(action)
+        #x_new = self.A @ self.x + self.B @ action 
+        
         noise = self.np_random.uniform(*self.noise_bnd).reshape(-1, 1)
         x_new[
             np.arange(0, self.nx, self.nx_l)

@@ -211,6 +211,7 @@ class LocalMpc(MpcAdmm, LearnableMpc):
 
         # dictionary containing initial values for local learnable parameters
         self.learnable_pars_init = self.learnable_pars_init_local.copy()
+        self.learnable_pars_init["kappa"] = np.array([[1.0]])
         self.learnable_pars_init["A"] = model.A_l_innacurate
         self.learnable_pars_init["B"] = model.B_l_innacurate
         self.learnable_pars_init.update(
@@ -232,16 +233,34 @@ class LocalMpc(MpcAdmm, LearnableMpc):
         )  # store the bits of x that are couplings in a list for ease of access
 
         # dynamics - added manually due to coupling
+
+        #########################
+
+        self.fixed_pars_init["u_bar"] = np.zeros((self.nu_l, N))
+
+        # SCP: linearise phi about the reference input trajectory u_bar
+        kappa = self.parameter("kappa", (1, 1))
+        u_bar = self.parameter("u_bar", (self.nu_l, N))
+
         for k in range(N):
             coup = cs.SX.zeros(self.nx_l, 1)
-            for i in range(num_neighbours):  # get coupling expression
+            for i in range(num_neighbours):
                 coup += A_c_list[i] @ x_c_list[i][:, [k]]
+
+            ub_k = u_bar[:, [k]]
+            d_k = Model.dphi_sym(ub_k, kappa)   # phi'(u_bar_k)
+            p_k = Model.phi_sym(ub_k, kappa)    # phi(u_bar_k)
+            B_k = B * d_k                       # B-tilde
+            c_k = B @ (p_k - d_k * ub_k)        # offset
+
             self.constraint(
                 f"dynam_{k}",
-                A @ x[:, [k]] + B @ u[:, [k]] + coup + b,
+                A @ x[:, [k]] + B_k @ u[:, [k]] + coup + b + c_k,
                 "==",
                 x[:, [k + 1]],
             )
+
+        #########################################
 
         # other constraints
         self.constraint(f"x_lb", self.x_bnd_l[0] + x_lb - s, "<=", x[:, 1:])

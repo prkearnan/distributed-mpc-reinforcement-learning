@@ -11,6 +11,36 @@ class Model:
     nx_l: ClassVar[int] = 2  # local state dimension
     nu_l: ClassVar[int] = 1  # local control dimension
 
+    ##########################
+
+    KAPPA: ClassVar[float] = 0.0
+
+    @staticmethod
+    def phi(u, kappa=None):
+        k = Model.KAPPA if kappa is None else kappa
+        if k == 0:
+            return u
+        return np.tanh(k * u) / k
+
+    @staticmethod
+    def dphi(u, kappa=None):
+        k = Model.KAPPA if kappa is None else kappa
+        if k == 0:
+            return np.ones_like(u)
+        return 1 - np.tanh(k * u) ** 2
+
+    @staticmethod
+    def phi_sym(u, kappa):
+        # symbolic phi, for us inside MPC. kappa may be an SX symbol
+        return cs.tanh(kappa * u) / kappa
+
+    @staticmethod
+    def dphi_sym(u, kappa):
+        # Symbolic derivative of phi wrt u
+        return 1 - cs.tanh(kappa * u) ** 2
+
+    ###########################
+
     x_bnd_l: ClassVar[np.ndarray] = np.array(
         [[0, -1], [1, 1]]
     )  # local state bounds x_bnd[0] <= x <= x_bnd[1]
@@ -41,6 +71,7 @@ class Model:
     A_c_l_innacurate: ClassVar[np.ndarray] = np.array(
         [[0, 0], [0, 0]]
     )  # inaccurate local coupling matrix A_c
+
 
     def __init__(self):
         """Initializes the model."""

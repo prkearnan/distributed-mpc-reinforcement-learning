@@ -204,6 +204,18 @@ class AdmmCoordinator:
                     ord=2,
                 )
 
+
+        # SCP: shift this solve's input trajectory forward to become the
+        # linearisation point for the next solve. Done outside the ADMM loop so
+        # the linearisation is fixed for all iterations of a single solve.
+        for i in range(self.n):
+            if local_sols[i] is not None and local_sols[i].success:
+                u_star = np.asarray(local_sols[i].vals["u"]).reshape(self.nu_l, self.N)
+                self.agents[i].fixed_parameters["u_bar"] = np.concatenate(
+                    [u_star[:, 1:], u_star[:, -1:]], axis=1
+                )
+
+
         return (
             loc_actions,
             local_sols,
