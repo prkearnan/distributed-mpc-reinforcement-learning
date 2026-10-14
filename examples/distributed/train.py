@@ -28,7 +28,7 @@ rho = 0.5
 model = Model()
 G = AdmmCoordinator.g_map(model.adj)
 
-FROZEN = {"B", "b", "f", "x_lb", "x_ub", "V0", "A"}
+FROZEN = set()
 
 # centralised mpc and params
 centralized_mpc = CentralizedMpc(model, prediction_horizon)
@@ -71,11 +71,12 @@ distributed_fixed_parameters: list = [
 for i in range(Model.n):
     for name in FROZEN:
         distributed_fixed_parameters[i][name] = distributed_mpcs[i].learnable_pars_init[name]
-    distributed_fixed_parameters[i]["B"] = Model.B_l   # true B, as before
+    if "B" in FROZEN:
+        distributed_fixed_parameters[i]["B"] = Model.B_l   # true B
 
 # learning arguments
 update_strategy = 2
-optimizer = GradientDescent(learning_rate=ExponentialScheduler(5e-5, factor=0.9996))
+optimizer = GradientDescent(learning_rate=ExponentialScheduler(0.7, factor=0.99))
 base_exp = EpsilonGreedyExploration(
     epsilon=ExponentialScheduler(1.5, factor=0.99),
     strength=0.1 * (model.u_bnd_l[1, 0] - model.u_bnd_l[0, 0]),
