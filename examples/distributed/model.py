@@ -13,7 +13,7 @@ class Model:
 
     ##########################
 
-    KAPPA: ClassVar[float] = 0.0
+    KAPPA: ClassVar[float] = 3.0
 
     @staticmethod
     def phi(u, kappa=None):

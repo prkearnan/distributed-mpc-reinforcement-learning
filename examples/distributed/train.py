@@ -28,6 +28,8 @@ rho = 0.5
 model = Model()
 G = AdmmCoordinator.g_map(model.adj)
 
+FROZEN = {"B", "b", "f", "x_lb", "x_ub", "V0", "A"}
+
 # centralised mpc and params
 centralized_mpc = CentralizedMpc(model, prediction_horizon)
 centralized_learnable_pars = LearnableParametersDict[cs.SX](
@@ -57,6 +59,7 @@ distributed_learnable_parameters: list[LearnableParametersDict] = [
                 ub=10.0 if name == "kappa" else np.inf,
             )
             for name, val in distributed_mpcs[i].learnable_pars_init.items()
+            if name not in FROZEN
         )
     )
     for i in range(Model.n)
@@ -65,11 +68,16 @@ distributed_fixed_parameters: list = [
     distributed_mpcs[i].fixed_pars_init for i in range(Model.n)
 ]
 
+for i in range(Model.n):
+    for name in FROZEN:
+        distributed_fixed_parameters[i][name] = distributed_mpcs[i].learnable_pars_init[name]
+    distributed_fixed_parameters[i]["B"] = Model.B_l   # true B, as before
+
 # learning arguments
 update_strategy = 2
 optimizer = GradientDescent(learning_rate=ExponentialScheduler(5e-5, factor=0.9996))
 base_exp = EpsilonGreedyExploration(
-    epsilon=ExponentialScheduler(0.7, factor=0.99),
+    epsilon=ExponentialScheduler(1.5, factor=0.99),
     strength=0.1 * (model.u_bnd_l[1, 0] - model.u_bnd_l[0, 0]),
     seed=1,
 )
@@ -130,7 +138,13 @@ agent = Log(  # type: ignore[var-annotated]
 agent.train(env=env, episodes=1, seed=1, raises=False)
 
 for i in range(Model.n):
-    print(f"agent {i} kappa = {agent.agents[i].learnable_parameters['kappa'].value}")
+    print(f"\n--- agent {i} ---")
+    init = distributed_mpcs[i].learnable_pars_init
+    for name, v0 in init.items():
+        if name in FROZEN:
+            continue
+        v = agent.agents[i].learnable_parameters[name].value
+        print(f"{name:>8}  init {np.array(v0).flatten()}  ->  now {np.array(v).flatten()}")
 
 # extract data
 # from agent
