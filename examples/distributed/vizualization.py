@@ -1,11 +1,12 @@
 import pickle
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
 from model import Model
 
 # file_name = "examples/distributed/centralized_data.pkl"
-file_name = "C_False_admm5.pkl"
+file_name = sys.argv[1] if len(sys.argv) > 1 else "C_False.pkl"
 with open(
     file_name,
     "rb",
